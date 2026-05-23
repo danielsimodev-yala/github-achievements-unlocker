@@ -1,0 +1,67 @@
+name: Unlock GitHub Achievements
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  unlock:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+      - name: Initialize README if missing
+        run: |
+          if [ ! -f README.md ]; then
+            printf "# GitHub Achievements Unlocker\n\nAutomated achievement workflow.\n" > README.md
+            git add README.md
+            git commit -m "chore: initialize README"
+            git push origin HEAD:main
+          fi
+
+      - name: Create and merge PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for i in $(seq 1 10); do
+            git checkout main
+            git pull origin main
+
+            BRANCH="achievement/round-${i}-$(date +%s)"
+            git checkout -b "$BRANCH"
+
+            mkdir -p logs
+            echo "Round ${i} — $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> logs/log.md
+            git add logs/log.md
+
+            git commit -m "feat: achievement round ${i}
+
+Co-authored-by: DummyUser <dummy@example.com>"
+
+            git push origin "$BRANCH"
+
+            PR_URL=$(gh pr create \
+              --title "Achievement round ${i}" \
+              --body "Automated achievement PR — round ${i}." \
+              --base main \
+              --head "$BRANCH")
+
+            PR_NUM=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+
+            gh pr merge "$PR_NUM" --merge --delete-branch
+
+            echo "PR #${PR_NUM} merged."
+          done

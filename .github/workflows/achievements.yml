@@ -44,18 +44,17 @@ jobs:
             git checkout -b "$BRANCH"
 
             mkdir -p logs
-            echo "Round ${i} — $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> logs/log.md
+            echo "Round ${i} - $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> logs/log.md
             git add logs/log.md
 
-            git commit -m "feat: achievement round ${i}
-
-Co-authored-by: DummyUser <dummy@example.com>"
+            MSG="$(printf 'feat: achievement round %s\n\nCo-authored-by: DummyUser <dummy@example.com>' "$i")"
+            git commit -m "$MSG"
 
             git push origin "$BRANCH"
 
             PR_URL=$(gh pr create \
               --title "Achievement round ${i}" \
-              --body "Automated achievement PR — round ${i}." \
+              --body "Automated achievement PR - round ${i}." \
               --base main \
               --head "$BRANCH")
 
@@ -63,5 +62,5 @@ Co-authored-by: DummyUser <dummy@example.com>"
 
             gh pr merge "$PR_NUM" --merge --delete-branch
 
-            echo "PR #${PR_NUM} merged."
+            echo "PR ${PR_NUM} merged."
           done
